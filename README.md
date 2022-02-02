@@ -1,10 +1,10 @@
 # Setup Akeyless services using Terraform
 
 This Github repo will provide examples for setting up Akeyless service components 
-- Akeyless-api-gateway
-- Akeyless Kubernetes Auth & Secret Injector
-- Akeyless-zero-trust-bastion (TBA)
-- Akeyless-zero-trust-web-access (TBA)
+- Akeyless-Api-Gateway
+- Akeyless-Kubernetes-Auth & Secret-Injector
+- Akeyless-Zero-Trust-Bastion (TBA)
+- Akeyless-Zero-Trust-Web-Access (TBA)
 
 
 ### Important Note
