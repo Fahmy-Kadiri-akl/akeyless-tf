@@ -7,12 +7,7 @@ Make sure to add the access-id used in this example to the allowed access-ids li
 
 ## Setup
 
-You can download the Terraform files using this command
-
-```sh
-curl -s -o k8s-auth-setup.tf https://gist.githubusercontent.com/Fahmy-Kadiri-akl/b6674c57374f2c24385660bc83e929fa/raw/031086e116d7186194d79eec2e9658d08ae39f1e/2.k8s-auth-setup.tf
-curl -s -o k8s-injector.tf https://gist.githubusercontent.com/Fahmy-Kadiri-akl/b6674c57374f2c24385660bc83e929fa/raw/031086e116d7186194d79eec2e9658d08ae39f1e/3.k8s-injector.tf
-```
+clone the repo or copy the files
 
 Here are examples of how to set the environment variables for the Terraform variables required to configure the Kubernetes Auth Configuration. Each Terraform variable should have a detailed description on how to get the information required to set the variable inside the file.
 
