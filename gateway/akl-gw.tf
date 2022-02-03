@@ -4,20 +4,25 @@ provider "helm" {
   }
 }
 
-variable "api_access_key" {
+variable "access_id" {
+  type = string  
+}
+
+variable "access_key" {
   type = string  
 }
 
 resource "helm_release" "akeyless-gateway" {
-  name = "agw"
+  name = "fk-aks-gw"
+
 
   repository = "https://akeylesslabs.github.io/helm-charts"
   chart      = "akeyless-api-gateway"
-  namespace  = "your-chosen-namespace"
+  namespace  = "fk-aks-akeyless"
   values = [<<EOT
 # Default values for akeyless-api-gateway.
 
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: akeyless/base
@@ -32,7 +37,8 @@ deployment:
 service:
   # Remove the {} and add any needed annotations regarding your LoadBalancer implementation
   annotations: {}
-  type: LoadBalancer
+  #type: LoadBalancer // why did we replace LoadBalancer with ClusterIP
+  type: ClusterIP
 
   # Here you can manage the list of ports you want to expose on the service (don't modify the port name):
   # 8000 - Configuration manager
@@ -73,18 +79,20 @@ readinessProbe:
 ingress:
   ## Set to true to enable ingress record generation
   ##
-  enabled: false
+  enabled: true
 
-  annotations: {}
+  annotations:
   # Example for Nginx ingress
-  #    annotations:
-  #      kubernetes.io/ingress.class: nginx
-  #      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-  #      nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
-  #      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-  #      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-  #      nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
-  #      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    # decide if you will use a namespace issuer or cluster issuer
+    cert-manager.io/issuer: letsencrypt-prod
+    #cert-manager.io/cluster-issuer: letsencrypt-prod
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 8k
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 
   # Example for AWS ELB ingress
   #    annotations:
@@ -93,15 +101,18 @@ ingress:
 
   rules:
     - servicePort: web
-      hostname: "ui.gateway.local"
+      hostname: gw.dnsname.local
     - servicePort: hvp
-      hostname: "hvp.gateway.local"
+      hostname: gw-hvp.dnsname.local
     - servicePort: legacy-api
-      hostname: "rest.gateway.local"
+      hostname: gw-api.dnsname.local
     - servicePort: api
-      hostname: "api.gateway.local"
+      hostname: gw-api-v2.dnsname.local
     - servicePort: configure-app
-      hostname: "conf.gateway.local"
+      hostname: gw-config.dnsname.local
+    - servicePort: kmip
+      hostname: gw-kmip.dnsname.local
+
 
   ## Path for the default host
   ##
@@ -111,11 +122,11 @@ ingress:
   ## TLS certificates will be retrieved from a TLS secret with name: {{- printf "%s-tls" .Values.ingress.hostname }}
   ## or a custom one if you use the tls.existingSecret parameter
   ##
-  tls: false
+  tls: true
 
   ## Set this to true in order to add the corresponding annotations for cert-manager and secret name
   ##
-  certManager: false
+  certManager: true
 
   ## existingSecret: name-of-existing-secret
 
@@ -132,41 +143,39 @@ resources: {}
   #   memory: 128Mi
 
 # Akeyless API Gateway application version
-version: 3.0.1
+# version:
 
 env: []
 
 akeylessUserAuth:
   # adminAccessId is required field, supported types: access_key,password or cloud identity(aws_iam/azure_ad/gcp_gce)
-  adminAccessId:
-  adminAccessKey: {$var.api_access_key}
+  adminAccessId: ${var.access_id}
+  adminAccessKey: ${var.access_key}
   adminPassword:
   clusterName:
   initialClusterDisplayName:
   # The key which is used to encrypt the API Gateway configuration. 
   # If left empty - the account’s default key will be used. 
-  # This key can be determined on cluster bringup only and cannot be modified afterwards
+  # This key can be determined on cluster bring-up only and cannot be modified afterwards
   configProtectionKeyName:
-  # list of allowed access-ids from your account that can login to the Configuration Managment WebUI
-  allowedAccessIDs: []
-  # - p-1234 subClimekey1=subClimeVal1
-  # - p-1234 subClimekey2=subClimeVal2
-  # - p-5678 subClimekey1=subClimeVal1
-  # - p-5678
-
+  # list of allowed access-ids from your account that can login to the Configuration Management WebUI
+  allowedAccessIDs:
+    - p-u91zmregsrwb
+    - p-9h04hlmf5o02
+    - p-282ijeav92ws email=fahmy.k@akeyless.io
+  
 # Customer Fragment is a critical component that allow customers to use a Zero-Knowledge Encryption.
 # For more information: https://docs.akeyless.io/docs/implement-zero-knowledge
 customerFragments: |
-{
-    "customer_fragments": [
-        {
-            "id": "cf-et8u.....b3iw7",
-            "value": "qrm0YoYSHb0j...JKb/zZmU8..yj4Ja/h/pa..Fvu4Esw==",
-            "description": "MyFirstCF"
-        }
-    ]
-}
-
+  {
+      "customer_fragments": [
+          {
+              "id": "......replace....me.....",
+              "value": ".........replace.....me.........************============",
+              "description": "Customer Fragment"
+          }
+      ]
+  }
 # Specifies an existing secret to be used for API Gateway, must include:
 #  - admin-access-id,
 #  - admin-access-key
